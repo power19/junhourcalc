@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ERPNext Hours Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -107,6 +108,98 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+            margin-top: 15px;
+        }
+
+        .btn-export:hover {
+            box-shadow: 0 5px 20px rgba(102, 187, 106, 0.4);
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-row h2 {
+            margin-bottom: 0;
+        }
+
+        .header-row button {
+            width: auto;
+            padding: 8px 20px;
+            font-size: 0.9rem;
+        }
+
+        /* PDF Export Styles */
+        #pdfContent {
+            background: #fff;
+            color: #333;
+            padding: 30px;
+            display: none;
+        }
+
+        #pdfContent h1 {
+            color: #1a1a2e;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        #pdfContent .pdf-subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        #pdfContent .pdf-summary {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        #pdfContent .pdf-summary-item {
+            text-align: center;
+        }
+
+        #pdfContent .pdf-summary-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        #pdfContent .pdf-summary-item .label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        #pdfContent table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        #pdfContent th {
+            background: #1976d2;
+            color: #fff;
+            padding: 10px 8px;
+            text-align: left;
+        }
+
+        #pdfContent td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #pdfContent tr:nth-child(even) {
+            background: #f9f9f9;
         }
 
         .summary {
@@ -281,7 +374,10 @@
 
         <div id="resultsSection" class="hidden">
             <div class="card">
-                <h2>📊 Summary</h2>
+                <div class="header-row">
+                    <h2>📊 Summary</h2>
+                    <button class="btn-export" onclick="exportToPDF()">📄 Export PDF</button>
+                </div>
                 <div class="summary">
                     <div class="summary-item">
                         <div class="value" id="totalHours">0</div>
@@ -331,6 +427,40 @@
         <div id="errorSection" class="hidden">
             <div class="error" id="errorMessage"></div>
         </div>
+    </div>
+
+    <!-- Hidden PDF Content Template -->
+    <div id="pdfContent">
+        <h1>ERPNext Hours Report</h1>
+        <div class="pdf-subtitle" id="pdfDateRange"></div>
+        <div class="pdf-summary">
+            <div class="pdf-summary-item">
+                <div class="value" id="pdfTotalHours">0</div>
+                <div class="label">Total Hours</div>
+            </div>
+            <div class="pdf-summary-item">
+                <div class="value" id="pdfTotalEntries">0</div>
+                <div class="label">Entries</div>
+            </div>
+            <div class="pdf-summary-item">
+                <div class="value" id="pdfAvgHours">0</div>
+                <div class="label">Avg Hours/Entry</div>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Hours Worked</th>
+                    <th>User</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="pdfEntriesBody">
+            </tbody>
+        </table>
     </div>
 
     <script>
@@ -573,6 +703,66 @@
             if (currentValue && users.includes(currentValue)) {
                 select.value = currentValue;
             }
+        }
+
+        // Store entries for PDF export
+        let currentEntries = [];
+
+        // Override displayResults to store entries
+        const originalDisplayResults = displayResults;
+        displayResults = function(entries) {
+            currentEntries = entries;
+            originalDisplayResults(entries);
+        };
+
+        function exportToPDF() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            // Update PDF content
+            document.getElementById('pdfDateRange').textContent =
+                `Report Period: ${formatDisplayDate(fromDate)} - ${formatDisplayDate(toDate)} | Generated: ${new Date().toLocaleString()}`;
+
+            document.getElementById('pdfTotalHours').textContent = document.getElementById('totalHours').textContent;
+            document.getElementById('pdfTotalEntries').textContent = document.getElementById('totalEntries').textContent;
+            document.getElementById('pdfAvgHours').textContent = document.getElementById('avgHours').textContent;
+
+            // Populate PDF table
+            const pdfTbody = document.getElementById('pdfEntriesBody');
+            pdfTbody.innerHTML = '';
+
+            currentEntries.forEach(entry => {
+                const hours = calculateHours(entry.period_start_date, entry.period_end_date);
+                const statusText = entry.docstatus === 1 ? 'Submitted' : 'Draft';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDisplayDate(entry.period_start_date || entry.posting_date)}</td>
+                    <td>${formatTime(entry.period_start_date)}</td>
+                    <td>${formatTime(entry.period_end_date)}</td>
+                    <td><strong>${hours.display}</strong></td>
+                    <td>${entry.user || '-'}</td>
+                    <td>${statusText}</td>
+                `;
+                pdfTbody.appendChild(row);
+            });
+
+            // Show PDF content temporarily
+            const pdfContent = document.getElementById('pdfContent');
+            pdfContent.style.display = 'block';
+
+            // Generate PDF
+            const opt = {
+                margin: 10,
+                filename: `hours-report-${fromDate}-to-${toDate}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(pdfContent).save().then(() => {
+                pdfContent.style.display = 'none';
+            });
         }
     </script>
 </body>
