@@ -30,3 +30,9 @@ Then open http://localhost:3000 in your browser.
 ## How it Works
 
 The app fetches POS Closing Entry records from ERPNext and calculates the time difference between `period_start_date` and `period_end_date` for each entry. The results are displayed in a table with summary statistics.
+
+
+git clone https://github.com/power19/junhourcalc.git
+cd junhourcalc
+git checkout claude/erpnext-hours-android-app-DBXmv
+node server.js
