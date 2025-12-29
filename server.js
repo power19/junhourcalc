@@ -4,7 +4,49 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// Secret key - must match the one in Android app
+const APP_SECRET = 'junlin-hours-app-2024-secret';
+
+// Access denied page
+const ACCESS_DENIED_HTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Denied</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            color: #fff;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+        }
+        h1 { color: #f44336; font-size: 3rem; margin-bottom: 20px; }
+        p { color: #b0bec5; font-size: 1.2rem; }
+        .icon { font-size: 5rem; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🔒</div>
+        <h1>Access Denied</h1>
+        <p>This application is only accessible via the Junlin Hours mobile app.</p>
+        <p>Please download the app to continue.</p>
+    </div>
+</body>
+</html>
+`;
 
 const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
@@ -13,11 +55,21 @@ const server = http.createServer(async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Junlin-App-Key, X-API-Key, X-API-Secret');
 
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
+        return;
+    }
+
+    // Check for app secret header (skip for API proxy which has its own auth)
+    const appKey = req.headers['x-junlin-app-key'];
+    const isApiRequest = pathname.startsWith('/api/');
+
+    if (!isApiRequest && appKey !== APP_SECRET) {
+        res.writeHead(403, { 'Content-Type': 'text/html' });
+        res.end(ACCESS_DENIED_HTML);
         return;
     }
 
@@ -104,6 +156,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
     console.log(`\n🚀 ERPNext Hours Calculator Server`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`📍 Open in browser: http://localhost:${PORT}`);
+    console.log(`📍 Server running on port ${PORT}`);
+    console.log(`🔒 App-only access enabled`);
     console.log(`\nPress Ctrl+C to stop the server\n`);
 });
