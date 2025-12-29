@@ -1,0 +1,12 @@
+{
+  "name": "erpnext-hours-calculator",
+  "version": "1.0.0",
+  "description": "Calculate hours worked from ERPNext POS Closing Entries",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["erpnext", "hours", "calculator", "pos"],
+  "author": "",
+  "license": "MIT"
+}

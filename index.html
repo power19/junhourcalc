@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERPNext Hours Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            color: #4fc3f7;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: #4fc3f7;
+            font-size: 1.2rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b0bec5;
+            font-size: 0.9rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .row .form-group {
+            flex: 1;
+        }
+
+        button {
+            background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(79, 195, 247, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .summary {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 15px 25px;
+            background: rgba(79, 195, 247, 0.2);
+            border-radius: 10px;
+            min-width: 150px;
+        }
+
+        .summary-item .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .summary-item .label {
+            font-size: 0.85rem;
+            color: #b0bec5;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(79, 195, 247, 0.2);
+            color: #4fc3f7;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status.submitted {
+            background: rgba(76, 175, 80, 0.3);
+            color: #81c784;
+        }
+
+        .status.draft {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffd54f;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #b0bec5;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #4fc3f7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            color: #ef9a9a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #b0bec5;
+        }
+
+        @media (max-width: 600px) {
+            .row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+
+            .summary-item {
+                min-width: 120px;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏱️ ERPNext Hours Calculator</h1>
+
+        <div class="card">
+            <h2>🔐 API Configuration</h2>
+            <div class="form-group">
+                <label>ERPNext URL</label>
+                <input type="url" id="erpUrl" value="https://junlin.shop" placeholder="https://your-site.erpnext.com">
+            </div>
+            <div class="row">
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="text" id="apiKey" value="1976819b1f0c012" placeholder="Your API Key">
+                </div>
+                <div class="form-group">
+                    <label>API Secret</label>
+                    <input type="password" id="apiSecret" value="28ee0590dceabc9" placeholder="Your API Secret">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📅 Filter Options</h2>
+            <div class="row">
+                <div class="form-group">
+                    <label>From Date</label>
+                    <input type="date" id="fromDate">
+                </div>
+                <div class="form-group">
+                    <label>To Date</label>
+                    <input type="date" id="toDate">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>User (Optional)</label>
+                <select id="userFilter">
+                    <option value="">All Users</option>
+                </select>
+            </div>
+            <button id="fetchBtn" onclick="fetchHours()">🔍 Fetch Hours</button>
+        </div>
+
+        <div id="resultsSection" class="hidden">
+            <div class="card">
+                <h2>📊 Summary</h2>
+                <div class="summary">
+                    <div class="summary-item">
+                        <div class="value" id="totalHours">0</div>
+                        <div class="label">Total Hours</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="totalEntries">0</div>
+                        <div class="label">Entries</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="avgHours">0</div>
+                        <div class="label">Avg Hours/Entry</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📋 POS Closing Entries</h2>
+                <div id="entriesContainer">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Hours Worked</th>
+                                <th>User</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="entriesBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingSection" class="hidden">
+            <div class="card">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Fetching data from ERPNext...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorSection" class="hidden">
+            <div class="error" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // Set default dates (current month)
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+            document.getElementById('fromDate').value = formatDate(firstDay);
+            document.getElementById('toDate').value = formatDate(lastDay);
+        });
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function formatTime(dateTimeStr) {
+            if (!dateTimeStr) return '-';
+            // Handle format: "29-12-2025 09:22:44" or "2025-12-29 09:22:44"
+            const parts = dateTimeStr.split(' ');
+            if (parts.length >= 2) {
+                return parts[1];
+            }
+            return dateTimeStr;
+        }
+
+        function formatDisplayDate(dateStr) {
+            if (!dateStr) return '-';
+            // Handle different date formats
+            let date;
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split(' ')[0].split('-');
+                if (parts[0].length === 4) {
+                    // YYYY-MM-DD format
+                    date = new Date(parts[0], parts[1] - 1, parts[2]);
+                } else {
+                    // DD-MM-YYYY format
+                    date = new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            }
+            return date ? date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            }) : dateStr;
+        }
+
+        function parseDateTime(dateTimeStr) {
+            if (!dateTimeStr) return null;
+
+            // Handle format: "2025-12-29 09:22:44" or "29-12-2025 09:22:44"
+            const parts = dateTimeStr.split(' ');
+            const datePart = parts[0];
+            const timePart = parts[1] || '00:00:00';
+
+            let year, month, day;
+            const dateParts = datePart.split('-');
+
+            if (dateParts[0].length === 4) {
+                // YYYY-MM-DD format
+                [year, month, day] = dateParts;
+            } else {
+                // DD-MM-YYYY format
+                [day, month, year] = dateParts;
+            }
+
+            const [hours, minutes, seconds] = timePart.split(':');
+
+            return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
+        }
+
+        function calculateHours(startDateTime, endDateTime) {
+            const start = parseDateTime(startDateTime);
+            const end = parseDateTime(endDateTime);
+
+            if (!start || !end) return { hours: 0, minutes: 0, display: '-' };
+
+            const diffMs = end - start;
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+            return {
+                hours: diffHours,
+                minutes: diffMinutes,
+                totalHours: diffMs / (1000 * 60 * 60),
+                display: `${diffHours}h ${diffMinutes}m`
+            };
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingSection').classList.toggle('hidden', !show);
+            document.getElementById('fetchBtn').disabled = show;
+        }
+
+        function showError(message) {
+            const errorSection = document.getElementById('errorSection');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorSection.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorSection').classList.add('hidden');
+        }
+
+        async function fetchHours() {
+            const erpUrl = document.getElementById('erpUrl').value.replace(/\/$/, '');
+            const apiKey = document.getElementById('apiKey').value;
+            const apiSecret = document.getElementById('apiSecret').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const userFilter = document.getElementById('userFilter').value;
+
+            if (!erpUrl || !apiKey || !apiSecret) {
+                showError('Please fill in all API configuration fields.');
+                return;
+            }
+
+            hideError();
+            showLoading(true);
+            document.getElementById('resultsSection').classList.add('hidden');
+
+            try {
+                // Build filters
+                let filters = [];
+                if (fromDate) {
+                    filters.push(['period_start_date', '>=', fromDate]);
+                }
+                if (toDate) {
+                    filters.push(['period_end_date', '<=', toDate + ' 23:59:59']);
+                }
+                if (userFilter) {
+                    filters.push(['user', '=', userFilter]);
+                }
+
+                const filtersParam = encodeURIComponent(JSON.stringify(filters));
+                const fields = encodeURIComponent(JSON.stringify([
+                    'name', 'period_start_date', 'period_end_date',
+                    'user', 'pos_profile', 'docstatus', 'posting_date'
+                ]));
+
+                const targetUrl = `${erpUrl}/api/resource/POS Closing Entry?filters=${filtersParam}&fields=${fields}&limit_page_length=0&order_by=period_start_date desc`;
+
+                // Use proxy to avoid CORS issues
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+
+                const response = await fetch(proxyUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-API-Key': apiKey,
+                        'X-API-Secret': apiSecret,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API Error (${response.status}): ${errorText}`);
+                }
+
+                const data = await response.json();
+                const entries = data.data || [];
+
+                displayResults(entries);
+                updateUserFilter(entries);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Failed to fetch data: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayResults(entries) {
+            const tbody = document.getElementById('entriesBody');
+            tbody.innerHTML = '';
+
+            if (entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="no-data">No entries found for the selected period.</td></tr>';
+                document.getElementById('resultsSection').classList.remove('hidden');
+                document.getElementById('totalHours').textContent = '0h 0m';
+                document.getElementById('totalEntries').textContent = '0';
+                document.getElementById('avgHours').textContent = '0h 0m';
+                return;
+            }
+
+            let totalHoursWorked = 0;
+
+            entries.forEach(entry => {
+                const hours = calculateHours(entry.period_start_date, entry.period_end_date);
+                totalHoursWorked += hours.totalHours || 0;
+
+                const statusClass = entry.docstatus === 1 ? 'submitted' : 'draft';
+                const statusText = entry.docstatus === 1 ? 'Submitted' : 'Draft';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDisplayDate(entry.period_start_date || entry.posting_date)}</td>
+                    <td>${formatTime(entry.period_start_date)}</td>
+                    <td>${formatTime(entry.period_end_date)}</td>
+                    <td><strong>${hours.display}</strong></td>
+                    <td>${entry.user || '-'}</td>
+                    <td><span class="status ${statusClass}">${statusText}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update summary
+            const totalH = Math.floor(totalHoursWorked);
+            const totalM = Math.round((totalHoursWorked - totalH) * 60);
+            const avgHours = totalHoursWorked / entries.length;
+            const avgH = Math.floor(avgHours);
+            const avgM = Math.round((avgHours - avgH) * 60);
+
+            document.getElementById('totalHours').textContent = `${totalH}h ${totalM}m`;
+            document.getElementById('totalEntries').textContent = entries.length;
+            document.getElementById('avgHours').textContent = `${avgH}h ${avgM}m`;
+
+            document.getElementById('resultsSection').classList.remove('hidden');
+        }
+
+        function updateUserFilter(entries) {
+            const users = [...new Set(entries.map(e => e.user).filter(Boolean))];
+            const select = document.getElementById('userFilter');
+            const currentValue = select.value;
+
+            // Keep first option (All Users)
+            select.innerHTML = '<option value="">All Users</option>';
+
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                option.textContent = user;
+                select.appendChild(option);
+            });
+
+            // Restore selection if still valid
+            if (currentValue && users.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+    </script>
+</body>
+</html>
