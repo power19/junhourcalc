@@ -3,6 +3,7 @@ package com.junlin.hours;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -19,9 +20,12 @@ public class MainActivity extends Activity {
     private WebView webView;
     private ProgressBar progressBar;
 
-    // Secret key that server will check - only the APK knows this
-    private static final String APP_SECRET = "junlin-hours-app-2024-secret";
-    private static final String APP_URL = "https://uren.junlin.shop";
+    // Obfuscated values - not plain text
+    private static final String[] _k = {"anVu", "bGlu", "LnNo", "b3A="};
+    private static final String[] _a = {"MTk3", "Njgx", "OWIx", "ZjBj", "MDEy"};
+    private static final String[] _s = {"Mjhl", "ZTBk", "OTBk", "Y2Vh", "YmM5"};
+    private static final String _p = "aHR0cHM6Ly91cmVuLg==";
+    private static final String _x = "anVubGluLWhvdXJzLWFwcC0yMDI0LXNlY3JldA==";
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -46,22 +50,21 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                // Only allow loading from our domain
-                if (url.startsWith(APP_URL)) {
-                    loadUrlWithHeaders(url);
+                if (url.startsWith(g(_p) + j(_k))) {
+                    lU(url);
                     return true;
                 }
-                return true; // Block all other URLs
+                return true;
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 progressBar.setVisibility(View.GONE);
+                iC();
             }
         });
 
-        // Show loading progress
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
@@ -74,15 +77,40 @@ public class MainActivity extends Activity {
             }
         });
 
-        // Load the app URL with secret header
-        loadUrlWithHeaders(APP_URL);
+        lU(g(_p) + j(_k));
     }
 
-    private void loadUrlWithHeaders(String url) {
-        Map<String, String> headers = new HashMap<>();
-        headers.put("X-Junlin-App-Key", APP_SECRET);
-        headers.put("X-Requested-With", "com.junlin.hours");
-        webView.loadUrl(url, headers);
+    private void lU(String url) {
+        Map<String, String> h = new HashMap<>();
+        h.put("X-Junlin-App-Key", g(_x));
+        h.put("X-Requested-With", getPackageName());
+        webView.loadUrl(url, h);
+    }
+
+    // Inject credentials into page
+    private void iC() {
+        String e = "https://" + j(_k);
+        String k = j(_a);
+        String s = j(_s);
+        String js = "javascript:(function(){" +
+                "if(document.getElementById('erpUrl'))document.getElementById('erpUrl').value='" + e + "';" +
+                "if(document.getElementById('apiKey'))document.getElementById('apiKey').value='" + k + "';" +
+                "if(document.getElementById('apiSecret'))document.getElementById('apiSecret').value='" + s + "';" +
+                "var cfg=document.querySelector('.card');if(cfg&&cfg.querySelector('h2').textContent.includes('API')){cfg.style.display='none';}" +
+                "})()";
+        webView.evaluateJavascript(js, null);
+    }
+
+    private String g(String e) {
+        return new String(Base64.decode(e, Base64.DEFAULT));
+    }
+
+    private String j(String[] p) {
+        StringBuilder r = new StringBuilder();
+        for (String s : p) {
+            r.append(g(s));
+        }
+        return r.toString();
     }
 
     @Override
