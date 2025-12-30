@@ -1,0 +1,38 @@
+# Add this service to your existing docker-compose.yml in /root/frappe-install/
+
+# hours-app:
+#   build:
+#     context: /root/hours-app
+#     dockerfile: Dockerfile
+#   image: hours-app:latest
+#   environment:
+#     - VIRTUAL_HOST=uren.junlin.shop
+#     - VIRTUAL_PORT=3000
+#     - CERT_NAME=junlin.shop
+#   networks:
+#     - frappe_network
+#   deploy:
+#     restart_policy:
+#       condition: on-failure
+
+# Or use this standalone docker-compose.yml:
+
+version: "3.8"
+
+services:
+  hours-app:
+    build: .
+    image: hours-app:latest
+    container_name: junlin-hours-app
+    environment:
+      - VIRTUAL_HOST=uren.junlin.shop
+      - VIRTUAL_PORT=3000
+      - CERT_NAME=junlin.shop
+      - PORT=3000
+    networks:
+      - frappe-install_frappe_network
+    restart: unless-stopped
+
+networks:
+  frappe-install_frappe_network:
+    external: true
