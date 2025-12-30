@@ -23,7 +23,7 @@ public class MainActivity extends Activity {
     // Obfuscated values - not plain text
     private static final String[] _k = {"anVu", "bGlu", "LnNo", "b3A="};
     private static final String[] _a = {"MTk3", "Njgx", "OWIx", "ZjBj", "MDEy"};
-    private static final String[] _s = {"Mjhl", "ZTBk", "OTBk", "Y2Vh", "YmM5"};
+    private static final String[] _s = {"Mjhl", "ZTA1", "OTBk", "Y2Vh", "YmM5"};
     private static final String _p = "aHR0cHM6Ly91cmVuLg==";
     private static final String _x = "anVubGluLWhvdXJzLWFwcC0yMDI0LXNlY3JldA==";
 
